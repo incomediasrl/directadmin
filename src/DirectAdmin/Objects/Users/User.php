@@ -305,6 +305,20 @@ class User extends BaseObject
         $this->clearCache();
     }
 
+    
+    /**
+     * Modify user's package
+     *
+     * @param string $newPackage New package name
+     */
+    public function modifyPackage(string $newPackage)
+    {
+        $this->getContext()->invokeApiPost('MODIFY_USER',
+                                           ['action' => 'package', 'user' => $this->getUsername(), 'package' => $newPackage]
+        );
+        $this->clearCache();
+    }
+
     /**
      * @param bool $newValue Whether catch-all email is enabled for this user
      */
