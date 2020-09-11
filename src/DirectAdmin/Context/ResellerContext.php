@@ -177,4 +177,32 @@ class ResellerContext extends UserContext
     {
         return new UserContext($this->getConnection()->loginAs($username), $validate);
     }
+
+
+
+    /**
+     * Return all packages available for this reseller's users
+     *
+     * @param string $package Specify package to get details
+     * @return array
+     */
+    public function getUsersPackages($package = null)
+    {
+        if (empty($package)) {
+            return $this->invokeApiGet('PACKAGES_USER');
+        }
+
+        return $this->invokeApiGet('PACKAGES_USER', ['package' => $package]);
+    }
+
+    /**
+     * Get details of user package
+     *
+     * @param string $packageName
+     * @return array
+     */
+    public function getPackageDetails($packageName)
+    {
+        return $this->getUsersPackages($packageName);
+    }
 }
