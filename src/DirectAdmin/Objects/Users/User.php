@@ -17,6 +17,7 @@ use Omines\DirectAdmin\DirectAdminException;
 use Omines\DirectAdmin\Objects\Database;
 use Omines\DirectAdmin\Objects\Domain;
 use Omines\DirectAdmin\Objects\BaseObject;
+use Omines\DirectAdmin\Objects\Ftp;
 use Omines\DirectAdmin\Utility\Conversion;
 
 /**
@@ -26,9 +27,10 @@ use Omines\DirectAdmin\Utility\Conversion;
  */
 class User extends BaseObject
 {
-    const CACHE_CONFIG = 'config';
+    const CACHE_CONFIG    = 'config';
     const CACHE_DATABASES = 'databases';
-    const CACHE_USAGE = 'usage';
+    const CACHE_FTPS      = 'ftps';
+    const CACHE_USAGE     = 'usage';
 
     /** @var Domain[] * */
     private $domains;
@@ -36,9 +38,9 @@ class User extends BaseObject
     /**
      * Construct the object.
      *
-     * @param string $name Username of the account
+     * @param string      $name    Username of the account
      * @param UserContext $context The context managing this object
-     * @param mixed|null $config An optional preloaded configuration
+     * @param mixed|null  $config  An optional preloaded configuration
      */
     public function __construct($name, UserContext $context, $config = null)
     {
@@ -60,8 +62,8 @@ class User extends BaseObject
     /**
      * Creates a new database under this user.
      *
-     * @param string $name Database name, without <user>_ prefix
-     * @param string $username Username to access the database with, without <user>_ prefix
+     * @param string      $name     Database name, without <user>_ prefix
+     * @param string      $username Username to access the database with, without <user>_ prefix
      * @param string|null $password Password, or null if database user already exists
      * @return Database Newly created database
      */
@@ -75,12 +77,12 @@ class User extends BaseObject
     /**
      * Creates a new domain under this user.
      *
-     * @param string $domainName Domain name to create
+     * @param string     $domainName     Domain name to create
      * @param float|null $bandwidthLimit Bandwidth limit in MB, or NULL to share with account
-     * @param float|null $diskLimit Disk limit in MB, or NULL to share with account
-     * @param bool|null $ssl Whether SSL is to be enabled, or NULL to fallback to account default
-     * @param bool|null $php Whether PHP is to be enabled, or NULL to fallback to account default
-     * @param bool|null $cgi Whether CGI is to be enabled, or NULL to fallback to account default
+     * @param float|null $diskLimit      Disk limit in MB, or NULL to share with account
+     * @param bool|null  $ssl            Whether SSL is to be enabled, or NULL to fallback to account default
+     * @param bool|null  $php            Whether PHP is to be enabled, or NULL to fallback to account default
+     * @param bool|null  $cgi            Whether CGI is to be enabled, or NULL to fallback to account default
      * @return Domain Newly created domain
      */
     public function createDomain($domainName, $bandwidthLimit = null, $diskLimit = null, $ssl = null, $php = null, $cgi = null)
@@ -217,6 +219,25 @@ class User extends BaseObject
         });
     }
 
+
+
+    /**
+     * Get ftps list
+     * @return Ftp[]
+     */
+    public function getFtps()
+    {
+        return $this->getCache(self::CACHE_FTPS, function () {
+            $ftps = [];
+            foreach ($this->getSelfManagedContext()->getDomains() as $domain) {
+                foreach ($this->getSelfManagedContext()->invokeApiGet('FTP', ['domain' => $domain->getDomainName()]) as $user => $path) {
+                    $ftps[$user] = new Ftp($user, $domain, $this->getSelfManagedContext(), $path);
+                }
+            }
+            return $ftps;
+        });
+    }
+
     /**
      * @param string $domainName
      * @return null|Domain
@@ -298,14 +319,14 @@ class User extends BaseObject
     public function modifyConfig(array $newConfig)
     {
         $this->getContext()->invokeApiPost('MODIFY_USER', array_merge(
-                $this->loadConfig(),
-                Conversion::processUnlimitedOptions($newConfig),
-                ['action' => 'customize', 'user' => $this->getUsername()]
+            $this->loadConfig(),
+            Conversion::processUnlimitedOptions($newConfig),
+            ['action' => 'customize', 'user' => $this->getUsername()]
         ));
         $this->clearCache();
     }
 
-    
+
     /**
      * Modify user's package
      *
@@ -354,7 +375,7 @@ class User extends BaseObject
     /**
      * Constructs the correct object from the given user config.
      *
-     * @param array $config The raw config from DirectAdmin
+     * @param array       $config  The raw config from DirectAdmin
      * @param UserContext $context The context within which the config was retrieved
      * @return Admin|Reseller|User The correct object
      * @throws DirectAdminException If the user type could not be determined
