@@ -67,6 +67,27 @@ class Database extends BaseObject
     }
 
     /**
+     * Set a new password for a databaseCreates a new database under the specified user.
+     *
+     * @param User        $user     Owner of the database
+     * @param string|null $password Password, or null if database user already exists
+     * @return array
+     */
+    public function setPassword(User $user, $password)
+    {
+
+        $options = [
+            'action'  => 'modifyuser',
+            'name'    => $this->getDatabaseName(),
+            'user'    => $this->getDatabaseName(),
+            'passwd'  => $password,
+            'passwd2' => $password
+        ];
+
+        return $user->getContext()->invokeApiPost('DATABASES', $options);
+    }
+
+    /**
      * Deletes this database from the user.
      */
     public function delete()
