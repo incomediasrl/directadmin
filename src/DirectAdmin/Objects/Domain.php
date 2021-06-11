@@ -161,11 +161,52 @@ class Domain extends BaseObject
     public function delete()
     {
         $this->getContext()->invokeApiPost('DOMAIN', [
-            'delete' => true,
+            'delete'    => true,
             'confirmed' => true,
-            'select0' => $this->domainName,
+            'select0'   => $this->domainName,
         ]);
         $this->owner->clearCache();
+    }
+
+    /**
+     * Create LetsEncryptCertificate
+     *
+     * @param array  $entries (es. [www.domain, email.domain, ecc..]
+     * @param string $keySize Valid values: 2048, 4096, prime256v1, secp384r1, secp521r1
+     * @param string $encryption
+     * @throws DirectAdminException
+     * @return bool
+     */
+    public function createLetsEncryptCertificate($entries = [], $keySize = '4096', $encryption = 'SHA256')
+    {
+        $data = [
+            'domain'     => $this->domainName,
+            'action'     => 'save',
+            'submit'     => 'save',
+            'type'       => 'create',
+            'request'    => 'letsencrypt',
+            'name'       => $this->domainName,
+            'keysize'    => $keySize,
+            'encryption' => $encryption,
+            'le_select0' => $this->domainName,
+        ];
+
+        if (is_array($entries) && count($entries) > 0) {
+            $n = 1;
+            foreach ($entries as $entry) {
+                $data['le_select' . $n] = $entry;
+                $n ++ ;
+            }
+        }
+
+        $res = $this->getContext()->invokeApiPost('SSL', $data);
+        $this->owner->clearCache();
+
+        if ($res['error'] == 1) {
+            throw new DirectAdminException("Cannot create LetsEncrypt certificate for domain " . $this->domainName." Error message: ". $res['details']);
+        }
+
+        return true;
     }
 
     /**
