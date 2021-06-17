@@ -266,6 +266,24 @@ class User extends BaseObject
     }
 
     /**
+     * Rename domain
+     *
+     * @param string $oldDomain
+     * @param string $newDomain
+     * @return bool
+     */
+    public function renameDomain($oldDomain, $newDomain)
+    {
+        $result = $this->getContext()->invokeApiPost('CHANGE_DOMAIN', ['old_domain' => $oldDomain, 'new_domain' => $newDomain]);
+        if ($result['error'] == 1) {
+            return false;
+        }
+        $this->clearCache();
+
+        return true;
+    }
+
+    /**
      * @return string The user type, as one of the ACCOUNT_TYPE_ constants in the DirectAdmin class
      */
     public function getType()

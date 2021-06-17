@@ -95,6 +95,21 @@ class Domain extends BaseObject
     }
 
     /**
+     * @param string $newDomainName
+     * @see https://www.directadmin.com/features.php?id=694
+     */
+    public function rename($newDomainName)
+    {
+        $result = $this->getContext()->invokeApiPost('CHANGE_DOMAIN', ['old_domain' => $this->domainName, 'new_domain' => $newDomainName]);
+        if (isset($result['error']) && $result['error'] == 0) {
+            $this->owner->clearCache();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Creates a new email forwarder.
      *
      * @param string $prefix Part of the email address before the @
@@ -142,6 +157,7 @@ class Domain extends BaseObject
         $this->getContext()->invokeApiPost('DOMAIN_POINTER', $parameters);
         $list[] = $domain;
         $list = array_unique($list);
+        $this->owner->clearCache();
     }
 
     /**
