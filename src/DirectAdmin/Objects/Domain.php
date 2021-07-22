@@ -140,6 +140,7 @@ class Domain extends BaseObject
      *
      * @param string $domain
      * @param bool $alias
+     * @return bool
      */
     public function createPointer($domain, $alias = false)
     {
@@ -154,10 +155,16 @@ class Domain extends BaseObject
         } else {
             $list = &$this->pointers;
         }
-        $this->getContext()->invokeApiPost('DOMAIN_POINTER', $parameters);
-        $list[] = $domain;
-        $list = array_unique($list);
-        $this->owner->clearCache();
+
+        $result = $this->getContext()->invokeApiPost('DOMAIN_POINTER', $parameters);
+        if (isset($result['error']) && $result['error'] == 0) {
+            $list[] = $domain;
+            $list = array_unique($list);
+            $this->owner->clearCache();
+            return true;
+        }
+
+        return false;
     }
 
     /**
