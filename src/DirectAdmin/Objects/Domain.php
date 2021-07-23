@@ -26,11 +26,11 @@ use Omines\DirectAdmin\Utility\Conversion;
 class Domain extends BaseObject
 {
     const CACHE_FORWARDERS = 'forwarders';
-    const CACHE_MAILBOXES = 'mailboxes';
+    const CACHE_MAILBOXES  = 'mailboxes';
     const CACHE_SUBDOMAINS = 'subdomains';
 
     const CATCHALL_BLACKHOLE = ':blackhole:';
-    const CATCHALL_FAIL = ':fail:';
+    const CATCHALL_FAIL      = ':fail:';
 
     /** @var string */
     private $domainName;
@@ -56,9 +56,9 @@ class Domain extends BaseObject
     /**
      * Construct the object.
      *
-     * @param string $name The domain name
-     * @param UserContext $context The owning user context
-     * @param string|array $config The basic config string as returned by CMD_API_ADDITIONAL_DOMAINS
+     * @param string       $name    The domain name
+     * @param UserContext  $context The owning user context
+     * @param string|array $config  The basic config string as returned by CMD_API_ADDITIONAL_DOMAINS
      */
     public function __construct($name, UserContext $context, $config)
     {
@@ -69,25 +69,25 @@ class Domain extends BaseObject
     /**
      * Creates a new domain under the specified user.
      *
-     * @param User $user Owner of the domain
-     * @param string $domainName Domain name to create
+     * @param User       $user           Owner of the domain
+     * @param string     $domainName     Domain name to create
      * @param float|null $bandwidthLimit Bandwidth limit in MB, or NULL to share with account
-     * @param float|null $diskLimit Disk limit in MB, or NULL to share with account
-     * @param bool|null $ssl Whether SSL is to be enabled, or NULL to fallback to account default
-     * @param bool|null $php Whether PHP is to be enabled, or NULL to fallback to account default
-     * @param bool|null $cgi Whether CGI is to be enabled, or NULL to fallback to account default
+     * @param float|null $diskLimit      Disk limit in MB, or NULL to share with account
+     * @param bool|null  $ssl            Whether SSL is to be enabled, or NULL to fallback to account default
+     * @param bool|null  $php            Whether PHP is to be enabled, or NULL to fallback to account default
+     * @param bool|null  $cgi            Whether CGI is to be enabled, or NULL to fallback to account default
      * @return Domain The newly created domain
      */
     public static function create(User $user, $domainName, $bandwidthLimit = null, $diskLimit = null, $ssl = null, $php = null, $cgi = null)
     {
         $options = [
-            'action' => 'create',
-            'domain' => $domainName,
+            'action'                                              => 'create',
+            'domain'                                              => $domainName,
             (isset($bandwidthLimit) ? 'bandwidth' : 'ubandwidth') => $bandwidthLimit,
-            (isset($diskLimit) ? 'quota' : 'uquota') => $diskLimit,
-            'ssl' => Conversion::onOff($ssl, $user->hasSSL()),
-            'php' => Conversion::onOff($php, $user->hasPHP()),
-            'cgi' => Conversion::onOff($cgi, $user->hasCGI()),
+            (isset($diskLimit) ? 'quota' : 'uquota')              => $diskLimit,
+            'ssl'                                                 => Conversion::onOff($ssl, $user->hasSSL()),
+            'php'                                                 => Conversion::onOff($php, $user->hasPHP()),
+            'cgi'                                                 => Conversion::onOff($cgi, $user->hasCGI()),
         ];
         $user->getContext()->invokeApiPost('DOMAIN', $options);
         $config = $user->getContext()->invokeApiGet('ADDITIONAL_DOMAINS');
@@ -112,7 +112,7 @@ class Domain extends BaseObject
     /**
      * Creates a new email forwarder.
      *
-     * @param string $prefix Part of the email address before the @
+     * @param string          $prefix     Part of the email address before the @
      * @param string|string[] $recipients One or more recipients
      * @return Forwarder The newly created forwarder
      */
@@ -124,9 +124,9 @@ class Domain extends BaseObject
     /**
      * Creates a new mailbox.
      *
-     * @param string $prefix Prefix for the account
-     * @param string $password Password for the account
-     * @param int|null $quota Quota in megabytes, or zero/null for unlimited
+     * @param string   $prefix    Prefix for the account
+     * @param string   $password  Password for the account
+     * @param int|null $quota     Quota in megabytes, or zero/null for unlimited
      * @param int|null $sendLimit Send limit, or 0 for unlimited, or null for system default
      * @return Mailbox The newly created mailbox
      */
@@ -139,19 +139,19 @@ class Domain extends BaseObject
      * Creates a pointer or alias.
      *
      * @param string $domain
-     * @param bool $alias
+     * @param bool   $alias
      * @return bool
      */
     public function createPointer($domain, $alias = false)
     {
         $parameters = [
             'domain' => $this->domainName,
-            'from' => $domain,
+            'from'   => $domain,
             'action' => 'add',
         ];
         if ($alias) {
             $parameters['alias'] = 'yes';
-            $list = &$this->aliases;
+            $list                = &$this->aliases;
         } else {
             $list = &$this->pointers;
         }
@@ -159,7 +159,31 @@ class Domain extends BaseObject
         $result = $this->getContext()->invokeApiPost('DOMAIN_POINTER', $parameters);
         if (isset($result['error']) && $result['error'] == 0) {
             $list[] = $domain;
-            $list = array_unique($list);
+            $list   = array_unique($list);
+            $this->owner->clearCache();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Delete a pointer.
+     *
+     * @param string $domain
+     * @param bool   $alias
+     * @return bool
+     */
+    public function deletePointer($domain)
+    {
+        $parameters = [
+            'domain'  => $this->domainName,
+            'select0' => $domain,
+            'action'  => 'delete',
+        ];
+
+        $result = $this->getContext()->invokeApiPost('DOMAIN_POINTER', $parameters);
+        if (isset($result['error']) && $result['error'] == 0) {
             $this->owner->clearCache();
             return true;
         }
@@ -197,8 +221,8 @@ class Domain extends BaseObject
      * @param array  $entries (es. [www.domain, email.domain, ecc..]
      * @param string $keySize Valid values: 2048, 4096, prime256v1, secp384r1, secp521r1
      * @param string $encryption
-     * @throws DirectAdminException
      * @return bool
+     * @throws DirectAdminException
      */
     public function createLetsEncryptCertificate($entries = [], $keySize = '4096', $encryption = 'SHA256')
     {
@@ -218,7 +242,7 @@ class Domain extends BaseObject
             $n = 1;
             foreach ($entries as $entry) {
                 $data['le_select' . $n] = $entry;
-                $n ++ ;
+                $n++;
             }
         }
 
@@ -226,7 +250,7 @@ class Domain extends BaseObject
         $this->owner->clearCache();
 
         if ($res['error'] == 1) {
-            throw new DirectAdminException("Cannot create LetsEncrypt certificate for domain " . $this->domainName." Error message: ". $res['details']);
+            throw new DirectAdminException("Cannot create LetsEncrypt certificate for domain " . $this->domainName . " Error message: " . $res['details']);
         }
 
         return true;
@@ -353,18 +377,18 @@ class Domain extends BaseObject
     /**
      * Invokes a POST command on a domain object.
      *
-     * @param string $command Command to invoke
-     * @param string $action Action to execute
-     * @param array $parameters Additional options for the command
-     * @param bool $clearCache Whether to clear the domain cache on success
+     * @param string $command    Command to invoke
+     * @param string $action     Action to execute
+     * @param array  $parameters Additional options for the command
+     * @param bool   $clearCache Whether to clear the domain cache on success
      * @return array Response from the API
      */
     public function invokePost($command, $action, $parameters = [], $clearCache = true)
     {
         $response = $this->getContext()->invokeApiPost($command, array_merge([
-            'action' => $action,
-            'domain' => $this->domainName,
-        ], $parameters));
+                                                                                 'action' => $action,
+                                                                                 'domain' => $this->domainName,
+                                                                             ], $parameters));
         if ($clearCache) {
             $this->clearCache();
         }
@@ -377,7 +401,7 @@ class Domain extends BaseObject
     public function setCatchall($newValue)
     {
         $parameters = array_merge(['domain' => $this->domainName, 'update' => 'Update'],
-            (empty($newValue) || $newValue[0] == ':') ? ['catch' => $newValue] : ['catch' => 'address', 'value' => $newValue]);
+                                  (empty($newValue) || $newValue[0] == ':') ? ['catch' => $newValue] : ['catch' => 'address', 'value' => $newValue]);
         $this->getContext()->invokeApiPost('EMAIL_CATCH_ALL', $parameters);
     }
 
@@ -395,7 +419,7 @@ class Domain extends BaseObject
      * Sets configuration options from raw DirectAdmin data.
      *
      * @param UserContext $context Owning user context
-     * @param array $config An array of settings
+     * @param array       $config  An array of settings
      */
     private function setConfig(UserContext $context, array $config)
     {
@@ -409,12 +433,12 @@ class Domain extends BaseObject
         }
 
         // Parse plain options
-        $bandwidths = array_map('trim', explode('/', $config['bandwidth']));
-        $this->bandwidthUsed = floatval($bandwidths[0]);
+        $bandwidths           = array_map('trim', explode('/', $config['bandwidth']));
+        $this->bandwidthUsed  = floatval($bandwidths[0]);
         $this->bandwidthLimit = !isset($bandwidths[1]) || ctype_alpha($bandwidths[1]) ? null : floatval($bandwidths[1]);
-        $this->diskUsage = floatval($config['quota']);
+        $this->diskUsage      = floatval($config['quota']);
 
-        $this->aliases = array_filter(explode('|', $config['alias_pointers']));
+        $this->aliases  = array_filter(explode('|', $config['alias_pointers']));
         $this->pointers = array_filter(explode('|', $config['pointers']));
     }
 }
