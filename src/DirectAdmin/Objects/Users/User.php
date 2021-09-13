@@ -192,6 +192,16 @@ class User extends BaseObject
     }
 
     /**
+     * Returns package of user
+     *
+     * @return mixed
+     */
+    public function getPackage()
+    {
+        return $this->getConfig('package');
+    }
+
+    /**
      * Returns whether the user is currently suspended.
      *
      * @return bool
