@@ -257,6 +257,31 @@ class Domain extends BaseObject
     }
 
     /**
+     * Create certificate as paste certificate and key
+     *
+     * @param string $certificateAndKey
+     * @return bool
+     */
+    public function pasteCertificateAndKey($certificateAndKey)
+    {
+        $data = [
+            'domain'      => $this->domainName,
+            'action'      => 'save',
+            'type'        => 'paste',
+            'certificate' => $certificateAndKey,
+        ];
+
+        $res = $this->getContext()->invokeApiPost('SSL', $data);
+        $this->owner->clearCache();
+
+        if ($res['error'] == 1) {
+            throw new DirectAdminException("Cannot paste certificate and key for domain " . $this->domainName . " Error message: " . $res['details']);
+        }
+
+        return true;
+    }
+
+    /**
      * @return string[] List of aliases for this domain
      */
     public function getAliases()
