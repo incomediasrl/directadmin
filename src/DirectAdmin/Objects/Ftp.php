@@ -172,6 +172,7 @@ class Ftp extends BaseObject
      * Reset the password for this ftp account.
      *
      * @param string $newPassword
+     * @return bool
      */
     public function setPassword($newPassword)
     {
@@ -180,7 +181,7 @@ class Ftp extends BaseObject
             throw new DirectAdminException("Cannot get type of ftp user ".$this->getName(true));
         }
 
-        $this->getContext()->invokeApiPost('FTP', [
+        $result = $this->getContext()->invokeApiPost('FTP', [
             'action'  => 'modify',
             'user'    => $this->getName(true),
             'domain'  => $this->domain->getDomainName(),
@@ -188,6 +189,12 @@ class Ftp extends BaseObject
             'passwd'  => $newPassword,
             'passwd2' => $newPassword,
         ]);
+
+        if (isset($result['error']) && $result['error'] == 0) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

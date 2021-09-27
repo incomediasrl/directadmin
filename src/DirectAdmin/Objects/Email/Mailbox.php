@@ -70,14 +70,21 @@ class Mailbox extends MailObject
      * Reset the password for this mailbox.
      *
      * @param string $newPassword
+     * @return bool
      */
     public function setPassword($newPassword)
     {
-        $this->invokePost('POP', 'modify', [
+        $result = $this->invokePost('POP', 'modify', [
             'user' => $this->getPrefix(),
             'passwd' => $newPassword,
             'passwd2' => $newPassword,
         ], false);
+
+        if (isset($result['error']) && $result['error'] == 0) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
