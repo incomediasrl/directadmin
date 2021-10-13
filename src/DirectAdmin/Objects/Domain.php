@@ -17,6 +17,7 @@ use Omines\DirectAdmin\Objects\Email\Forwarder;
 use Omines\DirectAdmin\Objects\Email\Mailbox;
 use Omines\DirectAdmin\Objects\Users\User;
 use Omines\DirectAdmin\Utility\Conversion;
+use phpDocumentor\Reflection\Types\Boolean;
 
 /**
  * Encapsulates a domain and its derived objects, like aliases, pointers and mailboxes.
@@ -52,6 +53,9 @@ class Domain extends BaseObject
 
     /** @var float */
     private $diskUsage;
+
+    /** @var bool */
+    private $forceSSL = false;
 
     /**
      * Construct the object.
@@ -101,6 +105,52 @@ class Domain extends BaseObject
     public function rename($newDomainName)
     {
         $result = $this->getContext()->invokeApiPost('CHANGE_DOMAIN', ['old_domain' => $this->domainName, 'new_domain' => $newDomainName]);
+        if (isset($result['error']) && $result['error'] == 0) {
+            $this->owner->clearCache();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Set parameter force_ssl
+     *
+     * @param bool $forceSSL
+     * @return bool
+     */
+    public function forceSSL(bool $forceSSL)
+    {
+        /**
+         * If state of force_ssl is same that desired
+         */
+        if (($forceSSL === true && $this->isForceSSL()) || ($forceSSL === false && !$this->forceSSL)) {
+            $this->owner->clearCache();
+            return true;
+        }
+
+        $parameters = [
+            'action'     => 'modify',
+            'domain'     => $this->domainName,
+            'force_ssl'  => $forceSSL ? 'yes' : 'no',
+            'ssl'        => Conversion::onOff($this->owner->hasSSL()),
+            'php'        => Conversion::onOff($this->owner->hasPHP()),
+            'cgi'        => Conversion::onOff($this->owner->hasCGI()),
+        ];
+
+        if ($this->bandwidthLimit != null) {
+            $parameters['bandwidth'] = $this->bandwidthLimit;
+        } else {
+            $parameters['ubandwidth'] = 'unlimited';
+        }
+
+        if ($this->diskUsage != null) {
+            $parameters['quota'] = $this->diskUsage;
+        } else {
+            $parameters['uquota'] = 'unlimited';
+        }
+
+        $result = $this->getContext()->invokeApiPost('DOMAIN', $parameters);
         if (isset($result['error']) && $result['error'] == 0) {
             $this->owner->clearCache();
             return true;
@@ -388,6 +438,14 @@ class Domain extends BaseObject
     }
 
     /**
+     * @return bool
+     */
+    public function isForceSSL()
+    {
+        return $this->forceSSL;
+    }
+
+    /**
      * @return Subdomain[] Associative array of subdomains
      */
     public function getSubdomains()
@@ -462,6 +520,10 @@ class Domain extends BaseObject
         $this->bandwidthUsed  = floatval($bandwidths[0]);
         $this->bandwidthLimit = !isset($bandwidths[1]) || ctype_alpha($bandwidths[1]) ? null : floatval($bandwidths[1]);
         $this->diskUsage      = floatval($config['quota']);
+
+        if (isset($config['force_ssl']) && $config['force_ssl'] == 'yes') {
+            $this->forceSSL = true;
+        }
 
         $this->aliases  = array_filter(explode('|', $config['alias_pointers']));
         $this->pointers = array_filter(explode('|', $config['pointers']));
