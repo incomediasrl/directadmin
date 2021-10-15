@@ -54,6 +54,9 @@ class Domain extends BaseObject
     /** @var float */
     private $diskUsage;
 
+    /** @var float|null */
+    private $diskLimit;
+
     /** @var bool */
     private $forceSSL = false;
 
@@ -144,8 +147,8 @@ class Domain extends BaseObject
             $parameters['ubandwidth'] = 'unlimited';
         }
 
-        if ($this->diskUsage != null) {
-            $parameters['quota'] = $this->diskUsage;
+        if ($this->diskLimit != null) {
+            $parameters['quota'] = $this->diskLimit;
         } else {
             $parameters['uquota'] = 'unlimited';
         }
@@ -520,6 +523,7 @@ class Domain extends BaseObject
         $this->bandwidthUsed  = floatval($bandwidths[0]);
         $this->bandwidthLimit = !isset($bandwidths[1]) || ctype_alpha($bandwidths[1]) ? null : floatval($bandwidths[1]);
         $this->diskUsage      = floatval($config['quota']);
+        $this->diskLimit      = !isset($config['quota_limit']) || ctype_alpha($config['quota_limit']) ? null : floatval($config['quota_limit']);
 
         if (isset($config['force_ssl']) && $config['force_ssl'] == 'yes') {
             $this->forceSSL = true;
