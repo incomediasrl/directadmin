@@ -127,8 +127,8 @@ class DirectAdmin
     public function invokeApi($method, $command, $options = [])
     {
         $result = $this->rawRequest($method, '/CMD_API_' . $command, $options);
-        if (!empty($result['error'])) {
-            throw new DirectAdminException("$method to $command failed: $result[details] ($result[text])");
+        if (!empty($result['error']) && $result['error'] != "0") {
+            throw new DirectAdminException("$method to $command failed: {$result['details']} ({$result['text']})");
         }
         return Conversion::sanitizeArray($result);
     }
