@@ -334,6 +334,19 @@ class Domain extends BaseObject
         return true;
     }
 
+    public function getCertificate()
+    {
+        $data = [
+            'domain' => $this->domainName,
+            'type'   => 'cacert',
+        ];
+
+        $res = $this->getContext()->invokeApiGet('SSL', $data);
+        $this->owner->clearCache();
+
+        return $res;
+    }
+
     /**
      * @return string[] List of aliases for this domain
      */

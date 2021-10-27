@@ -284,4 +284,28 @@ class UserTest extends \PHPUnit\Framework\TestCase
         $subdomains['sub2']->delete(false);
         $this->assertEmpty($domain->getSubdomains());
     }
+
+    public function testGetCertificate()
+    {
+        $connection = DirectAdmin::connectUser(DIRECTADMIN_URL, USER_USERNAME, USER_PASSWORD);
+        $this->assertInstanceOf('\Omines\DirectAdmin\Context\UserContext', $connection, get_class($connection));
+        $domain = $connection->getDomain(TEST_USER_DOMAIN);
+        $this->assertInstanceOf('\Omines\DirectAdmin\Objects\Domain', $domain, get_class($domain));
+        $certificate = $domain->getCertificate();
+        $this->assertIsArray($certificate);
+        $this->assertArrayHasKey('Issuer', $certificate);
+        $this->assertArrayHasKey('Not After', $certificate);
+        $this->assertArrayHasKey('Not Before', $certificate);
+        $this->assertArrayHasKey('Subject', $certificate);
+        $this->assertArrayHasKey('certificate', $certificate);
+        $this->assertArrayHasKey('certificate_hosts', $certificate);
+        $this->assertArrayHasKey('end', $certificate);
+        $this->assertArrayHasKey('force_ssl', $certificate);
+        $this->assertArrayHasKey('issuer_simple', $certificate);
+        $this->assertArrayHasKey('key', $certificate);
+        $this->assertArrayHasKey('server', $certificate);
+        $this->assertArrayHasKey('signed', $certificate);
+        $this->assertArrayHasKey('ssl_on', $certificate);
+        $this->assertArrayHasKey('start', $certificate);
+    }
 }
