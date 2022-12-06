@@ -43,6 +43,12 @@ class Domain extends BaseObject
     private $aliases;
 
     /** @var string[] */
+    private $phpVersions;
+
+    /** @var string */
+    private $selectedPhpVersion;
+
+    /** @var string[] */
     private $pointers;
 
     /** @var float */
@@ -459,6 +465,68 @@ class Domain extends BaseObject
     public function isForceSSL()
     {
         return $this->forceSSL;
+    }
+
+    /**
+     * get PHP info
+     * @return mixed The value of the domain item
+     * @see https://www.directadmin.com/features.php?id=1738 and https://www.directadmin.com/features.php?id=2427
+     * @return array array with php versions and the selected one
+     */
+    public function getPhpInfo() {
+
+        $rs = $this->getContext()->invokeApiGet('ADDITIONAL_DOMAINS', ['action' => 'view', 'domain' => $this->domainName]);
+
+        $selectedPhpVersionKey = null;
+        foreach ($rs as $key => $value) {
+            if (preg_match('/php(.)_ver/', $key) != false) {
+                $this->phpVersions[$key] = $value;
+            } else if ($key === 'php1_select') {
+                $this->selectedPhpVersion = "php{$value}_ver";
+            }
+        }
+
+        $currentVersion = !empty($this->selectedPhpVersion)
+            ? $this->phpVersions[$this->selectedPhpVersion]
+            : array_values($this->phpVersions)[0]; // if no selected version -> return the first one (the server default)
+
+        return [array_values($this->phpVersions), $currentVersion];
+    }
+
+    /**
+     * Check if Php version was selected (if false means that is using the server default one)
+     * @return bool
+     */
+    public function isPhpVersionSelected() {
+        if (empty($this->phpVersions)) {
+            $this->getPhpInfo();
+        }
+
+        return !empty($this->selectedPhpVersion) ? true : false;
+    }
+
+    /**
+     * Set php version specified
+     * @param string $version // php version
+     * @return array
+     */
+    public function setPhpVersion($version) {
+
+        $versionToSet = null;
+        foreach ($this->phpVersions as $key => $value) {
+            if ($value === $version) {
+                $versionToSet = substr($key, 3, 1);
+            }
+        }
+
+        if ($versionToSet !== null) {
+            $ret = $this->getContext()->invokeApiPost('DOMAIN', ['action' => 'php_selector', 'php1_select' => $versionToSet, 'domain' => $this->domainName]);
+        } else {
+            throw new DirectAdminException('Could not set php version: ' . $version . " for domain " . $this->domainName . ". Version not available");
+
+        }
+
+        return $ret;
     }
 
     /**
