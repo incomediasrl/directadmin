@@ -1,5 +1,5 @@
 {
-  "name": "omines/directadmin",
+  "name": "incomediasrl/directadmin",
   "type": "library",
   "version": "v0.3.0",
   "description": "PHP client library to manage DirectAdmin control panel servers.",
